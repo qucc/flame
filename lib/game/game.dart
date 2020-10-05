@@ -16,8 +16,6 @@ import 'widget_builder.dart';
 /// Subclass this to implement the [update] and [render] methods.
 /// Flame will deal with calling these methods properly when the game's widget is rendered.
 abstract class Game {
-  // Widget Builder for this Game
-  final builder = WidgetBuilder();
 
   /// Returns the game background color.
   /// By default it will return a black color.
@@ -49,10 +47,6 @@ abstract class Game {
 
   /// Use for caluclating the FPS.
   void onTimingsCallback(List<FrameTiming> timings) {}
-
-  /// Returns the game widget. Put this in your structure to start rendering and updating the game.
-  /// You can add it directly to the runApp method or inside your widget structure (if you use vanilla screens and widgets).
-  Widget get widget => builder.build(this);
 
   void _handleKeyEvent(e) {
     (this as KeyboardEvents).onKeyEvent(e);
@@ -102,20 +96,4 @@ class OverlayWidget {
   final Widget widget;
 
   OverlayWidget(this.name, this.widget);
-}
-
-mixin HasWidgetsOverlay on Game {
-  @override
-  final builder = OverlayWidgetBuilder();
-
-  final StreamController<OverlayWidget> widgetOverlayController =
-      StreamController();
-
-  void addWidgetOverlay(String overlayName, Widget widget) {
-    widgetOverlayController.sink.add(OverlayWidget(overlayName, widget));
-  }
-
-  void removeWidgetOverlay(String overlayName) {
-    widgetOverlayController.sink.add(OverlayWidget(overlayName, null));
-  }
 }
