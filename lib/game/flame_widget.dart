@@ -1,4 +1,6 @@
 
+import 'dart:js';
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/widgets.dart';
 
@@ -271,3 +273,17 @@ class _GenericTapEventHandler {
   void Function(int pointerId, TapDownDetails details) onTapDown;
   void Function(int pointerId, TapUpDetails details) onTapUp;
 }
+
+
+final gw = GameWidget<MyGameClass>(
+    game: flameGame,
+    defaultvisibleStuff: ["pause"],
+    buildOverlays: {
+      "pause": (BuildContext ctx, MyGameClass game) {
+
+          return Text("paused", style: TextStyle(color: Theme.of(context)),)
+
+      },
+    }
+
+)
