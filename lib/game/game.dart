@@ -5,24 +5,23 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/widgets.dart' hide WidgetBuilder;
+import 'package:flutter/widgets.dart';
 
 import '../assets/assets_cache.dart';
 import '../assets/images.dart';
 import '../extensions/vector2.dart';
 import '../keyboard.dart';
-import 'widget_builder.dart';
 
 /// Represents a generic game.
 ///
 /// Subclass this to implement the [update] and [render] methods.
 /// Flame will deal with calling these methods properly when the game's widget is rendered.
 abstract class Game {
-  // Widget Builder for this Game
-  final builder = WidgetBuilder();
-
   final images = Images();
   final assets = AssetsCache();
+  BuildContext buildContext;
+
+  bool get isAttached => buildContext != null;
 
   /// Returns the game background color.
   /// By default it will return a black color.
@@ -51,12 +50,19 @@ abstract class Game {
   /// Use for caluclating the FPS.
   void onTimingsCallback(List<FrameTiming> timings) {}
 
-  /// Returns the game widget. Put this in your structure to start rendering and updating the game.
-  /// You can add it directly to the runApp method or inside your widget structure (if you use vanilla screens and widgets).
-  Widget get widget => builder.build(this);
-
   void _handleKeyEvent(RawKeyEvent e) {
     (this as KeyboardEvents).onKeyEvent(e);
+  }
+
+  void attach(PipelineOwner owner, BuildContext context) {
+    if(isAttached) {
+      throw UnsupportedError("""
+      Game attachment error:
+      A game instance can only be attached to one widget at a time.
+      """);
+    }
+    buildContext = context;
+    onAttach();
   }
 
   // Called when the Game widget is attached
@@ -102,29 +108,28 @@ abstract class Game {
   /// Use this method to load the assets need for the game instance to run
   Future<void> onLoad() async {}
 
-  /// Returns the widget which will be show while the instance is loading
-  Widget loadingWidget() => Container();
+
 }
 
-class OverlayWidget {
-  final String name;
-  final Widget widget;
+class ActiveOverlaysNotifier extends ChangeNotifier {
+  final Set<String> activeOverlays = {};
 
-  OverlayWidget(this.name, this.widget);
+  bool add(String overlayName) {
+    final setChanged = activeOverlays.add(overlayName);
+    if (setChanged) {
+      notifyListeners();
+    }
+    return setChanged;
+  }
+  bool remove(String overlayName) {
+    final hasRemoved = activeOverlays.remove(overlayName);
+    if (hasRemoved) {
+      notifyListeners();
+    }
+    return hasRemoved;
+  }
 }
 
 mixin HasWidgetsOverlay on Game {
-  @override
-  final builder = OverlayWidgetBuilder();
-
-  final StreamController<OverlayWidget> widgetOverlayController =
-      StreamController();
-
-  void addWidgetOverlay(String overlayName, Widget widget) {
-    widgetOverlayController.sink.add(OverlayWidget(overlayName, widget));
-  }
-
-  void removeWidgetOverlay(String overlayName) {
-    widgetOverlayController.sink.add(OverlayWidget(overlayName, null));
-  }
+  final overlays = ActiveOverlaysNotifier();
 }
